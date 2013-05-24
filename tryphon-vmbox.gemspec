@@ -20,6 +20,8 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency "qemu"
   spec.add_runtime_dependency "json"
+  spec.add_runtime_dependency "null_logger"
+  spec.add_runtime_dependency "activesupport"
 
   spec.add_development_dependency "simplecov"
   spec.add_development_dependency "rspec"

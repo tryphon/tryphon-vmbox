@@ -2,6 +2,9 @@ require "vmbox/version"
 require "qemu"
 require "open-uri"
 require "json"
+require "null_logger"
+
+require "active_support/core_ext/module/attribute_accessors"
 
 class Object
 
@@ -12,6 +15,9 @@ class Object
 end
 
 class VMBox
+
+  @@logger = NullLogger.instance
+  mattr_accessor :logger
 
   attr_accessor :name
 
@@ -27,9 +33,8 @@ class VMBox
   end
 
   @@root_dir = Pathname.new("dist")
-  def root_dir
-    @@root_dir
-  end
+  mattr_accessor :root_dir
+
   def self.root_dir=(root_dir)
     @@root_dir = Pathname.new(root_dir)
   end
@@ -42,7 +47,8 @@ class VMBox
 
   def start_and_save
     rollbackable.start
-    wait_for(100) { status }
+    logger.info "Wait for VMBox status"
+    wait_for(100) { up? and status }
     save
   end
 
@@ -65,12 +71,16 @@ class VMBox
   class ArpScan < Struct.new(:interface)
 
     def output
-      `sudo arp-scan --localnet --interface #{interface}`
+      command = "sudo arp-scan --localnet --interface #{interface}"
+      VMBox.logger.debug "Run arp-scan : #{command}"
+      `#{command}`
     end
 
     def hosts
       output.scan(/^([0-9\.]+)\t([0-9a-f:]+)\t(.*)$/).map do |host_line|
         Host.new(*host_line)
+      end.tap do |hosts|
+        VMBox.logger.debug { "Found #{hosts.size} host(s) : #{hosts.map(&:ip_address).join(',')}" }
       end
     end
 
@@ -104,7 +114,9 @@ class VMBox
   end
 
   def status
-    JSON.parse open(url("status.json")).read if ip_address
+    status_url = url("status.json")
+    logger.debug "Retrieve VMBox status (#{status_url})"
+    JSON.parse open(status_url).read if ip_address
   rescue
     nil
   end
@@ -143,6 +155,8 @@ class VMBox
       kvm.vnc = ":#{index}"
 
       kvm.sound_hardware = "ac97"
+
+      logger.debug "Prepare KVM instance: #{kvm.inspect}"
     end
   end
 
@@ -160,22 +174,27 @@ class VMBox
   end
 
   def start
+    logger.info "Start VMBox #{name}"
     kvm.daemon.start
   end
 
   def stop
+    logger.info "Stop VMBox #{name}"
     kvm.daemon.stop
   end
 
   def reset
+    logger.info "Reset VMBox #{name}"
     kvm.qemu_monitor.reset
   end
 
   def save
+    logger.info "Save VMBox #{name}"
     kvm.qemu_monitor.savevm
   end
 
   def rollback
+    logger.info "Rollback VMBox #{name}"
     kvm.qemu_monitor.loadvm
   end
 
