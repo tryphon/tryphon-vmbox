@@ -1,0 +1,10 @@
+Interface: wlan0, datalink type: EN10MB (Ethernet)
+Starting arp-scan 1.8.1 with 256 hosts (http://www.nta-monitor.com/tools/arp-scan/)
+10.164.13.1	00:ee:00:ee:00:01	(Unknown)
+10.164.13.2	00:ee:00:ee:00:01	(Unknown)
+10.164.13.3	00:ee:00:ee:00:02	(Unknown)
+10.164.13.154	b4:07:18:03:f3:13	SAMSUNG ELECTRO-MECHANICS
+10.164.13.241	64:27:23:4f:27:0d	Dummy
+
+5 packets received by filter, 0 packets dropped by kernel
+Ending arp-scan 1.8.1: 256 hosts scanned in 1.373 seconds (186.45 hosts/sec). 5 responded
