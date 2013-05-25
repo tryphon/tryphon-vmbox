@@ -2,7 +2,7 @@ require "vmbox/version"
 require "qemu"
 require "open-uri"
 require "json"
-require "null_logger"
+require "logger"
 
 require "active_support/core_ext/module/attribute_accessors"
 
@@ -16,7 +16,7 @@ end
 
 class VMBox
 
-  @@logger = NullLogger.instance
+  @@logger = Logger.new("log/vmboxes.log")
   mattr_accessor :logger
 
   attr_accessor :name
