@@ -46,7 +46,7 @@ class VMBox
   end
 
   def start_and_save(timeout = nil)
-    timeout ||= 100
+    timeout ||= 240
 
     rollbackable.start
     logger.info "Wait for VMBox status"
