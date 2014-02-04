@@ -3,6 +3,7 @@ require "qemu"
 require "open-uri"
 require "json"
 require "logger"
+require 'net/ssh'
 
 require "active_support/core_ext/module/attribute_accessors"
 
@@ -41,7 +42,13 @@ class VMBox
 
   def rollbackable
     @rollbackable ||= dup.tap do |other|
+      logger.info "Convert system disk to qcow2"
       other.system = QEMU::Image.new(system).convert(:qcow2)
+
+      if storage_exists?
+        logger.info "Convert storage disk to qcow2"
+        other.storage = QEMU::Image.new(storage).convert(:qcow2)
+      end
     end
   end
 
@@ -49,8 +56,8 @@ class VMBox
     timeout ||= 240
 
     rollbackable.start
-    logger.info "Wait for VMBox status"
-    wait_for(timeout) { up? and status }
+    logger.info "Wait for VMBox ready?"
+    wait_for(timeout) { ready? }
     save
   end
 
@@ -118,9 +125,58 @@ class VMBox
   def status
     status_url = url("status.json")
     logger.debug "Retrieve VMBox status (#{status_url})"
-    JSON.parse open(status_url).read if ip_address
-  rescue
+
+    if up?
+      raw_attributes = JSON.parse(open(status_url).read)
+      Status.new(raw_attributes.merge(:ignored_details => ignored_status_details)).tap do |status|
+        logger.debug "Current VMBox status : #{status.inspect}"
+      end
+    end
+  rescue => e
+    logger.debug "Can't return status : #{e}"
     nil
+  end
+
+  def ignored_status_details
+    @ignored_status_details ||= []
+  end
+
+  class Status
+
+    attr_accessor :global_status, :details, :ignored_details
+
+    def initialize(attributes = {})
+      attributes.each { |k,v| send "#{k}=", v }
+    end
+
+    def ready?
+      ok? or signifiant_details.empty?
+    end
+
+    def ok?
+      global_status == "ok"
+    end
+
+    def ignored_details
+      @ignored_details ||= []
+    end
+
+    def ignored_detail?(detail_name)
+      ignored_details.any? do |ignored_detail|
+        ignored_detail.match detail_name
+      end
+    end
+
+    def signifiant_details
+      details.delete_if do |detail|
+        ignored_detail? detail["name"]
+      end
+    end
+
+  end
+
+  def ready?
+    up? and retrieved_status = status and retrieved_status.ready?
   end
 
   attr_accessor :system
@@ -135,20 +191,43 @@ class VMBox
     @system ||=  root_dir + "disk"
   end
 
-  def storage
-    @storage ||= root_dir + "storage"
+  def storage_candidates
+    [
+      root_dir + "storage",
+      root_dir + "storage.qcow2",
+    ]
   end
 
-  def storage?
-    File.exists?(storage)
+  def storage
+    @storage ||=
+      begin
+        existing_storage = storage_candidates.find do |storage|
+          self.class.storage_exists? storage
+        end
+        default_storage = storage_candidates.first
+        existing_storage or default_storage
+      end
   end
+
+  def self.storage_exists?(storages)
+    Array(storages).find do |storage|
+      not File.exists? storage
+    end.nil?
+  end
+
+  def storage_exists?
+    self.class.storage_exists? storage
+  end
+  alias_method :storage?, :storage_exists?
 
   def kvm
     @kvm ||= QEMU::Command.new.tap do |kvm|
       kvm.name = name
       kvm.memory = 800 # tmpfs to small with 512
-      kvm.disks.add(system, :cache => :unsafe)
-      kvm.disks << storage if storage?
+      kvm.disks.add system, :cache => :none
+      if storage_exists?
+        kvm.disks.add storage, :cache => :none
+      end
 
       # TODO support index > 9 ...
       kvm.mac_address = "52:54:00:12:35:0#{index}"
@@ -171,8 +250,16 @@ class VMBox
   end
 
   # TODO support raid
-  def prepare_storage(storage_size)
-    QEMU::Image.new(storage, :size => storage_size).create
+  def prepare_storage(storage_size, options = {})
+    options = { :format => "raw" }.merge options
+    options[:size] = storage_size
+
+    if options[:format].to_s == "qcow2"
+      options[:options] = { :preallocation => "metadata", :cluster_size => "2M" }
+    end
+
+    logger.info "Prepare storage #{options.inspect}"
+    QEMU::Image.new(storage, options).create
   end
 
   def start
@@ -200,4 +287,21 @@ class VMBox
     kvm.qemu_monitor.loadvm
   end
 
+  def ssh(command)
+    Net::SSH.start(ip_address, "root", :paranoid => false) do |ssh|
+      logger.debug "Execute '#{command}'"
+      ssh.exec! command
+    end
+  end
+
+  def touch(file)
+    ssh "touch #{file}"
+  end
+
+  def exists?(file)
+    ssh "test -f #{file} && echo true"
+  end
+
 end
+
+QEMU.logger = VMBox.logger
