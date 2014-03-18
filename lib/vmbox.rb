@@ -188,23 +188,22 @@ class VMBox
   end
 
   def system
-    @system ||=  root_dir + "disk"
+    @system ||=  root_dir.join "disk"
   end
 
   def storage_candidates
-    [
-      root_dir + "storage",
-      root_dir + "storage.qcow2",
-    ]
+    %w{storage storage.qcow2 storage1 storage1.qcow2 storage2 storage2.qcow2}.map do |filename|
+      root_dir.join filename
+    end
   end
 
   def storage
     @storage ||=
       begin
-        existing_storage = storage_candidates.find do |storage|
+        existing_storage = storage_candidates.select do |storage|
           self.class.storage_exists? storage
         end
-        default_storage = storage_candidates.first
+        default_storage = [ storage_candidates.first ]
         existing_storage or default_storage
       end
   end
@@ -225,9 +224,10 @@ class VMBox
       kvm.name = name
       kvm.memory = 800 # tmpfs to small with 512
       kvm.disks.add system, :cache => :none
-      if storage_exists?
-        kvm.disks.add storage, :cache => :none
-      end
+
+      storage.each do |disk|
+        kvm.disks.add disk, :cache => :none
+      end if storage_exists?
 
       # TODO support index > 9 ...
       kvm.mac_address = "52:54:00:12:35:0#{index}"
