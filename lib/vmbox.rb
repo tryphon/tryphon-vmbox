@@ -20,7 +20,7 @@ class VMBox
   @@logger = Logger.new("log/vmboxes.log")
   mattr_accessor :logger
 
-  attr_accessor :name
+  attr_accessor :name, :architecture
 
   def initialize(name, options = {})
     @name = name
@@ -222,6 +222,8 @@ class VMBox
   def kvm
     @kvm ||= QEMU::Command.new.tap do |kvm|
       kvm.name = name
+      kvm.architecture = architecture
+
       kvm.memory = 800 # tmpfs to small with 512
       kvm.disks.add system, :cache => :none
 
