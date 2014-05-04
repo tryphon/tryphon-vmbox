@@ -6,6 +6,7 @@ require "logger"
 require 'net/ssh'
 
 require "active_support/core_ext/module/attribute_accessors"
+require "active_support/core_ext/class/attribute_accessors"
 
 class Object
 
@@ -44,11 +45,7 @@ class VMBox
     @rollbackable ||= dup.tap do |other|
       logger.info "Convert system disk to qcow2"
       other.system = QEMU::Image.new(system).convert(:qcow2)
-
-      if storage_exists?
-        logger.info "Convert storage disk to qcow2"
-        other.storage = QEMU::Image.new(storage).convert(:qcow2)
-      end
+      other.storage = other.storage.rollbackable if storage.exists?
     end
   end
 
@@ -118,7 +115,7 @@ class VMBox
     @mac_address ||= "52:54:00:12:35:0#{index}"
   end
 
-  def url(path)
+  def url(path = nil)
     "http://#{ip_address or hostname}/#{path}"
   end
 
@@ -191,33 +188,9 @@ class VMBox
     @system ||=  root_dir.join "disk"
   end
 
-  def storage_candidates
-    %w{storage storage.qcow2 storage1 storage1.qcow2 storage2 storage2.qcow2}.map do |filename|
-      root_dir.join filename
-    end
-  end
-
   def storage
-    @storage ||=
-      begin
-        existing_storage = storage_candidates.select do |storage|
-          self.class.storage_exists? storage
-        end
-        default_storage = [ storage_candidates.first ]
-        existing_storage or default_storage
-      end
+    @storage ||= VMBox::Storage.detect(root_dir)
   end
-
-  def self.storage_exists?(storages)
-    Array(storages).find do |storage|
-      not File.exists? storage
-    end.nil?
-  end
-
-  def storage_exists?
-    self.class.storage_exists? storage
-  end
-  alias_method :storage?, :storage_exists?
 
   def kvm
     @kvm ||= QEMU::Command.new.tap do |kvm|
@@ -227,9 +200,9 @@ class VMBox
       kvm.memory = 800 # tmpfs to small with 512
       kvm.disks.add system, :cache => :none
 
-      storage.each do |disk|
-        kvm.disks.add disk, :cache => :none
-      end if storage_exists?
+      storage.each do |file|
+        kvm.disks.add file, :cache => :none
+      end if storage.exists?
 
       # TODO support index > 9 ...
       kvm.mac_address = "52:54:00:12:35:0#{index}"
@@ -248,20 +221,7 @@ class VMBox
   end
 
   def prepare(origin_system, storage_size = nil)
-    prepare_storage storage_size unless storage_size.nil? or File.exists?(storage)
-  end
-
-  # TODO support raid
-  def prepare_storage(storage_size, options = {})
-    options = { :format => "raw" }.merge options
-    options[:size] = storage_size
-
-    if options[:format].to_s == "qcow2"
-      options[:options] = { :preallocation => "metadata", :cluster_size => "2M" }
-    end
-
-    logger.info "Prepare storage #{options.inspect}"
-    QEMU::Image.new(storage, options).create
+    storage.create storage_size unless storage_size.nil? or storage.exists?
   end
 
   def start
@@ -307,3 +267,6 @@ class VMBox
 end
 
 QEMU.logger = VMBox.logger
+
+require 'vmbox/storage'
+require 'vmbox/storage_detector'

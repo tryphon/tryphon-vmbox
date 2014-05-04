@@ -15,13 +15,13 @@ describe VMBox do
   describe "#ip_address" do
 
     let(:arp_scan) do
-      mock.tap do |arp_scan|
+      double.tap do |arp_scan|
         VMBox::ArpScan.should_receive(:new).and_return(arp_scan)
       end
     end
 
     it "should find VM ip with arp-scan" do
-      arp_scan.should_receive(:host).with(:mac_address => subject.mac_address).and_return(mock(:ip_address => "dummy"))
+      arp_scan.should_receive(:host).with(:mac_address => subject.mac_address).and_return(double(:ip_address => "dummy"))
       subject.ip_address.should == "dummy"
     end
 
@@ -60,6 +60,17 @@ describe VMBox do
     it "should use index to build a default mac_address" do
       subject.index = 1
       subject.mac_address.should == "52:54:00:12:35:01"
+    end
+
+  end
+
+  describe "#storage" do
+
+    let(:storage) { double }
+
+    it "should detect storage in root_dir" do
+      VMBox::Storage.should_receive(:detect).with(subject.root_dir).and_return(storage)
+      subject.storage.should == storage
     end
 
   end
