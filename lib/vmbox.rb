@@ -74,42 +74,6 @@ class VMBox
     @ip_address ||= ArpScan.new(:tap0).host(:mac_address => mac_address).try :ip_address
   end
 
-  class ArpScan < Struct.new(:interface)
-
-    def output
-      command = "sudo arp-scan --localnet --interface #{interface}"
-      VMBox.logger.debug "Run arp-scan : #{command}"
-      `#{command}`
-    end
-
-    def hosts
-      output.scan(/^([0-9\.]+)\t([0-9a-f:]+)\t(.*)$/).map do |host_line|
-        Host.new(*host_line)
-      end.tap do |hosts|
-        VMBox.logger.debug { "Found #{hosts.size} host(s) : #{hosts.map(&:ip_address).join(',')}" }
-      end
-    end
-
-    def host(filters = {})
-      hosts.find do |host|
-        filters.all? do |k,v|
-          host.send(k) == v
-        end
-      end
-    end
-
-    class Host < Struct.new(:ip_address, :mac_address, :vendor)
-
-      def ==(other)
-        [:ip_address, :mac_address, :vendor].all? do |attribute|
-          other.respond_to? attribute and send(attribute) == other.send(attribute)
-        end
-      end
-
-    end
-
-  end
-
   attr_accessor :mac_address
   def mac_address
     @mac_address ||= "52:54:00:12:35:0#{index}"
@@ -270,3 +234,4 @@ QEMU.logger = VMBox.logger
 
 require 'vmbox/storage'
 require 'vmbox/storage_detector'
+require 'vmbox/arp_scan'
