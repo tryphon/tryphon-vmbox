@@ -213,9 +213,12 @@ class VMBox
     kvm.qemu_monitor.savevm
   end
 
-  def rollback
+  def rollback(timeout = 240)
     logger.info "Rollback VMBox #{name}"
     kvm.qemu_monitor.loadvm
+    logger.info "Wait for VMBox ready?"
+    wait_for(timeout) { ready? }
+  end
   end
 
   def ssh(command = nil, &block)
