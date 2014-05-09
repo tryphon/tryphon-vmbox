@@ -6,6 +6,7 @@ require "logger"
 require 'net/ssh'
 require 'net/scp'
 require 'tempfile'
+require 'box'
 
 require "active_support/core_ext/module/attribute_accessors"
 require "active_support/core_ext/class/attribute_accessors"
@@ -246,11 +247,19 @@ class VMBox
     file_cache[path]
   end
 
+  def configuration(&block)
+    VMBox::Configuration.new(self).load.tap do |config|
+      yield config if block_given?
+    end
+  end
+
 end
 
-QEMU.logger = VMBox.logger
+QEMU.logger = Box.logger = VMBox.logger
+Box::PuppetConfiguration.system_update_command = nil
 
 require 'vmbox/storage'
 require 'vmbox/storage_detector'
 require 'vmbox/arp_scan'
 require 'vmbox/file'
+require 'vmbox/configuration'
