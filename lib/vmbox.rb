@@ -219,6 +219,12 @@ class VMBox
     logger.info "Wait for VMBox ready?"
     wait_for(timeout) { ready? }
   end
+
+  def reboot(timeout = 240)
+    logger.info "Reboot VMBox #{name}"
+    ssh "reboot"
+    logger.info "Wait for VMBox ready?"
+    wait_for(timeout) { ready? }
   end
 
   def ssh(command = nil, &block)
