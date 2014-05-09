@@ -4,9 +4,13 @@ require "open-uri"
 require "json"
 require "logger"
 require 'net/ssh'
+require 'net/scp'
+require 'tempfile'
 
 require "active_support/core_ext/module/attribute_accessors"
 require "active_support/core_ext/class/attribute_accessors"
+require 'active_support/core_ext/module/delegation'
+
 
 class Object
 
@@ -213,19 +217,33 @@ class VMBox
     kvm.qemu_monitor.loadvm
   end
 
-  def ssh(command)
+  def ssh(command = nil, &block)
     Net::SSH.start(ip_address, "root", :paranoid => false) do |ssh|
-      logger.debug "Execute '#{command}'"
-      ssh.exec! command
+      if command
+        logger.debug "Execute '#{command}'"
+        ssh.exec! command
+      else
+        yield ssh
+      end
     end
   end
 
-  def touch(file)
-    ssh "touch #{file}"
+  def scp(&block)
+    result = nil
+    Net::SCP.start(ip_address, "root", :paranoid => false) do |scp|
+      result = yield scp
+    end
+    result
   end
 
-  def exists?(file)
-    ssh "test -f #{file} && echo true"
+  def file_cache
+    @file_cache ||= Hash.new do |hash, path|
+      hash[path] = VMBox::File.new self, path
+    end
+  end
+
+  def file(path)
+    file_cache[path]
   end
 
 end
@@ -235,3 +253,4 @@ QEMU.logger = VMBox.logger
 require 'vmbox/storage'
 require 'vmbox/storage_detector'
 require 'vmbox/arp_scan'
+require 'vmbox/file'

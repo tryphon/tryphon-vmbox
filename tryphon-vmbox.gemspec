@@ -22,6 +22,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "json"
   spec.add_runtime_dependency "activesupport", "~> 3.2.1"
   spec.add_runtime_dependency "net-ssh"
+  spec.add_runtime_dependency "net-scp"
 
   spec.add_development_dependency "simplecov"
   spec.add_development_dependency "rspec"
