@@ -5,6 +5,7 @@ require "json"
 require "logger"
 require 'net/ssh'
 require 'net/scp'
+require 'net/ftp'
 require 'tempfile'
 require 'box'
 
@@ -244,6 +245,13 @@ class VMBox
       result = yield scp
     end
     result
+  end
+
+  def ftp(&block)
+    Net::FTP.open(ip_address) do |ftp|
+      ftp.login
+      yield ftp
+    end
   end
 
   def file_cache
