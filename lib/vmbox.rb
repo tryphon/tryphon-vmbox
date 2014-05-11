@@ -167,6 +167,8 @@ class VMBox
       kvm.name = name
       kvm.architecture = architecture
 
+      kvm.usb = true
+
       kvm.memory = 800 # tmpfs to small with 512
       kvm.disks.add system, :cache => :none
 
