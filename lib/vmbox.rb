@@ -188,6 +188,8 @@ class VMBox
     end
   end
 
+  delegate :qemu_monitor, :to => :kvm
+
   def telnet_port
     4444 + index
   end
