@@ -268,6 +268,16 @@ class VMBox
     file_cache[path]
   end
 
+  def directory_cache
+    @directory_cache ||= Hash.new do |hash, path|
+      hash[path] = VMBox::Directory.new self, path
+    end
+  end
+
+  def directory(path)
+    directory_cache[path]
+  end
+
   def configuration(&block)
     VMBox::Configuration.new(self).load.tap do |config|
       yield config if block_given?
@@ -283,4 +293,5 @@ require 'vmbox/storage'
 require 'vmbox/storage_detector'
 require 'vmbox/arp_scan'
 require 'vmbox/file'
+require 'vmbox/directory'
 require 'vmbox/configuration'
