@@ -37,7 +37,12 @@ class VMBox
   attr_accessor :index
 
   def index
-    @index ||= 0
+    @index ||= default_index
+  end
+
+  @@box_list = %w{streambox playbox pigebox linkbox playbox rivendellallbox rivendellairbox rivendellnasbox soundbox}
+  def default_index
+    ENV['VMBOX_INDEX'].try(:to_i) || @@box_list.index(name.to_s) || 0
   end
 
   @@root_dir = Pathname.new("dist")

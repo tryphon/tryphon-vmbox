@@ -12,6 +12,29 @@ describe VMBox do
 
   end
 
+  describe "#default_index" do
+
+    it "shoud return the value provided by VMBOX_INDEX when defined" do
+      ENV['VMBOX_INDEX']="42"
+      subject.default_index.should == 42
+    end
+
+    it "shoud return a value according to the Box name" do
+      subject.name = "linkbox"
+      subject.default_index.should == 3
+    end
+
+    it "shoud return 0" do
+      subject.name = "dummy"
+      subject.default_index.should == 0
+    end
+
+    after do
+      ENV['VMBOX_INDEX']=nil
+    end
+
+  end
+
   describe "#ip_address" do
 
     let(:arp_scan) do
