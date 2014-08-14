@@ -58,8 +58,8 @@ describe VMBox do
   describe "#mac_address" do
 
     it "should use index to build a default mac_address" do
-      subject.index = 1
-      subject.mac_address.should == "52:54:00:12:35:01"
+      subject.index = 99
+      subject.mac_address.should == "52:54:00:12:35:99"
     end
 
   end

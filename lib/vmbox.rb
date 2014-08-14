@@ -82,7 +82,7 @@ class VMBox
 
   attr_accessor :mac_address
   def mac_address
-    @mac_address ||= "52:54:00:12:35:0#{index}"
+    @mac_address ||= ("52:54:00:12:35:%02d" % index)
   end
 
   def url(path = nil)
@@ -176,8 +176,7 @@ class VMBox
         kvm.disks.add file, :cache => :none
       end if storage.exists?
 
-      # TODO support index > 9 ...
-      kvm.mac_address = "52:54:00:12:35:0#{index}"
+      kvm.mac_address = mac_address
 
       kvm.telnet_port = telnet_port
       kvm.vnc = ":#{index}"
