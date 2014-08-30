@@ -40,7 +40,7 @@ class VMBox
     @index ||= default_index
   end
 
-  @@box_list = %w{streambox playbox pigebox linkbox playbox rivendellallbox rivendellairbox rivendellnasbox soundbox}
+  @@box_list = %w{streambox playbox pigebox linkbox playbox rivendellallbox rivendellairbox rivendellnasbox soundbox stagebox}
   def default_index
     ENV['VMBOX_INDEX'].try(:to_i) || @@box_list.index(name.to_s) || 0
   end
