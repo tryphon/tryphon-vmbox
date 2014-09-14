@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "net-ssh"
   spec.add_runtime_dependency "net-scp"
   spec.add_runtime_dependency "tryphon-box"
+  spec.add_runtime_dependency "httparty"
 
   spec.add_development_dependency "simplecov"
   spec.add_development_dependency "rspec"

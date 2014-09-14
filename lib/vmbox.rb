@@ -8,6 +8,7 @@ require 'net/scp'
 require 'net/ftp'
 require 'tempfile'
 require 'box'
+require 'httparty'
 
 require "active_support/core_ext/module/attribute_accessors"
 require "active_support/core_ext/class/attribute_accessors"
@@ -90,8 +91,9 @@ class VMBox
     @mac_address ||= ("52:54:00:12:35:%02d" % index)
   end
 
-  def url(path = nil)
-    "http://#{ip_address or hostname}/#{path}"
+  def url(path = nil, options = {})
+    port_part = options[:port] ? ":#{port}" : ""
+    "http://#{ip_address or hostname}#{port_part}/#{path}"
   end
 
   def status
@@ -286,6 +288,16 @@ class VMBox
     VMBox::Configuration.new(self).load.tap do |config|
       yield config if block_given?
     end
+  end
+
+  def get(path, options = {})
+    options[:format] ||= :json if path.end_with?(".json")
+    HTTParty.get url(path, { :port => options.delete(:port) }), options
+  end
+
+  def post(path, options = {})
+    options[:format] ||= :json if path.end_with?(".json")
+    HTTParty.post url(path, { :port => options.delete(:port) }), options
   end
 
 end
