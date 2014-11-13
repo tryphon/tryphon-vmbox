@@ -28,10 +28,11 @@ class VMBox
   @@logger = Logger.new("log/vmboxes.log")
   mattr_accessor :logger
 
-  attr_accessor :name, :architecture
+  attr_accessor :name, :architecture, :root_dir
 
   def initialize(name, options = {})
     @name = name
+    @root_dir = @@root_dir
     options.each { |k,v| send "#{k}=", v }
   end
 
@@ -47,8 +48,6 @@ class VMBox
   end
 
   @@root_dir = Pathname.new("dist")
-  mattr_accessor :root_dir
-
   def self.root_dir=(root_dir)
     @@root_dir = Pathname.new(root_dir)
   end
