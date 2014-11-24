@@ -160,13 +160,13 @@ class VMBox
     up? and retrieved_status = status and retrieved_status.ready?
   end
 
-  attr_accessor :system
-  attr_accessor :storage
-
   def up?
     # Because ip_address uses arp-scan
     !!ip_address
   end
+
+  attr_accessor :system
+  attr_accessor :storage
 
   def system
     @system ||=  root_dir.join "disk"
@@ -176,6 +176,12 @@ class VMBox
     @storage ||= VMBox::Storage.detect(root_dir)
   end
 
+  attr_accessor :memory
+
+  def memory
+    @memory ||= 800
+  end
+
   def kvm
     @kvm ||= QEMU::Command.new.tap do |kvm|
       kvm.name = name
@@ -183,7 +189,7 @@ class VMBox
 
       kvm.usb = true
 
-      kvm.memory = 800 # tmpfs to small with 512
+      kvm.memory = memory
       kvm.disks.add system, :cache => :none
 
       storage.each do |file|
