@@ -110,8 +110,16 @@ class VMBox
     nil
   end
 
+  def default_ignored_status_details
+    if env_variable = ENV["VMBOX_IGNORED_STATUS_DETAILS"]
+      env_variable.split(",")
+    else
+      []
+    end
+  end
+
   def ignored_status_details
-    @ignored_status_details ||= []
+    @ignored_status_details ||= default_ignored_status_details
   end
 
   class Status
