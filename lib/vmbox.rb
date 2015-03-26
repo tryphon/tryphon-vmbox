@@ -316,7 +316,6 @@ class VMBox
 end
 
 QEMU.logger = Box.logger = VMBox.logger
-Box::PuppetConfiguration.system_update_command = nil
 
 require 'vmbox/storage'
 require 'vmbox/storage_detector'
