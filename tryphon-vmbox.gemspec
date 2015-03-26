@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_runtime_dependency "qemu", "~> 0.4"
+  spec.add_runtime_dependency "qemu", "~> 1.0"
   spec.add_runtime_dependency "json"
   spec.add_runtime_dependency "activesupport", "~> 3.2.1"
   spec.add_runtime_dependency "net-ssh"
